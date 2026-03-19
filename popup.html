@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task Reminder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 420px;
+      min-height: 300px;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      padding: 16px;
+    }
+
+    h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Add Task Form */
+    .form-box {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    .form-box input, .form-box textarea {
+      width: 100%;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e0e0e0;
+      padding: 8px 10px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .form-box input:focus, .form-box textarea:focus {
+      border-color: #555;
+    }
+
+    .form-box textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .form-box input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .form-row input {
+      margin-bottom: 0;
+      flex: 1;
+    }
+
+    .btn-add {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-add:hover { background: #1d4ed8; }
+
+    /* Section Headers */
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #888;
+      margin-bottom: 8px;
+      margin-top: 4px;
+    }
+
+    /* Task Card */
+    .task-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+    }
+
+    .task-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .task-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-pending {
+      background: #1e3a5f;
+      color: #60a5fa;
+    }
+
+    .badge-due {
+      background: #3b1a1a;
+      color: #f87171;
+    }
+
+    .badge-done {
+      background: #1a2e1a;
+      color: #4ade80;
+    }
+
+    .task-desc {
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .task-meta {
+      font-size: 11px;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .task-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-done {
+      background: #14532d;
+      color: #4ade80;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .btn-done:hover { background: #166534; }
+
+    .btn-reactivate {
+      background: #1e3a5f;
+      color: #60a5fa;
+      border: none;
+      border-radius: 5px;
+      padding: 5px 10px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .btn-reactivate:hover { background: #1e40af; }
+
+    .empty-msg {
+      font-size: 12px;
+      color: #444;
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #222;
+      margin: 14px 0;
+    }
+
+    .form-label {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-box input[type="time"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+    
+  </style>
+</head>
+<body>
+
+  <h1>📋 Task Reminder</h1>
+
+  <!-- Add Task Form -->
+  <div class="form-box">
+    <input type="text" id="taskTitle" placeholder="Task title" />
+    <textarea id="taskDesc" placeholder="Description (optional)"></textarea>
+    <div class="form-label">Completion Date & Time</div>
+    <div class="form-row">
+      <input type="date" id="taskDue" />
+      <input type="time" id="taskTime" />
+      <button class="btn-add" id="addTaskBtn">+ Add Task</button>
+    </div>
+  </div>
+
+  <!-- Active Section -->
+  <div class="section-title">Active</div>
+  <div id="activeList"></div>
+
+  <hr class="divider" />
+
+  <!-- Done Section -->
+  <div class="section-title">Done</div>
+  <div id="doneList"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
