@@ -90,6 +90,7 @@ function renderTasks() {
             </div>
             <div class="task-actions">
               <button class="btn-done" data-id="${task.id}">✓ Mark Complete</button>
+              <button class="btn-delete" data-id="${task.id}">🗑 Delete</button>
             </div>
           </div>
         `;
@@ -114,6 +115,7 @@ function renderTasks() {
             </div>
             <div class="task-actions">
               <button class="btn-reactivate" data-id="${task.id}">↩ Move to Active</button>
+              <button class="btn-delete" data-id="${task.id}">🗑 Delete</button>
             </div>
           </div>
         `;
@@ -122,31 +124,26 @@ function renderTasks() {
 
     // Mark Complete buttons
     document.querySelectorAll(".btn-done").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        markDone(id);
-      });
+      btn.addEventListener("click", () => markDone(btn.getAttribute("data-id")));
     });
 
     // Reactivate buttons
     document.querySelectorAll(".btn-reactivate").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const id = btn.getAttribute("data-id");
-        markActive(id);
-      });
+      btn.addEventListener("click", () => markActive(btn.getAttribute("data-id")));
+    });
+
+    // Delete buttons
+    document.querySelectorAll(".btn-delete").forEach(btn => {
+      btn.addEventListener("click", () => deleteTask(btn.getAttribute("data-id")));
     });
   });
 }
 
 function markDone(id) {
-  // Cancel the task-specific alarm
   chrome.runtime.sendMessage({ type: "CANCEL_TASK_ALARM", taskId: id });
-
   loadTasks((tasks) => {
     const updated = tasks.map(t => {
-      if (t.id === id) {
-        return { ...t, status: "done", completedAt: Date.now() };
-      }
+      if (t.id === id) return { ...t, status: "done", completedAt: Date.now() };
       return t;
     });
     saveTasks(updated, renderTasks);
@@ -163,20 +160,28 @@ function markActive(id) {
       }
       return t;
     });
-
     saveTasks(updated, () => {
-      // Reschedule alarm if time hasn't passed
       if (task && task.completionDateTime) {
-        chrome.runtime.sendMessage({ type: "SCHEDULE_TASK_ALARM", task: { ...task, status: "active" } }, (response) => {
-          if (response && !response.scheduled) {
-            // Time already passed — mark as due (just re-render, isTaskDue handles badge)
-          }
-          renderTasks();
-        });
+        chrome.runtime.sendMessage(
+          { type: "SCHEDULE_TASK_ALARM", task: { ...task, status: "active" } },
+          () => renderTasks()
+        );
       } else {
         renderTasks();
       }
     });
+  });
+}
+
+function deleteTask(id) {
+  const confirmed = confirm("Are you sure you want to delete this task? This cannot be undone.");
+  if (!confirmed) return;
+
+  chrome.runtime.sendMessage({ type: "CANCEL_TASK_ALARM", taskId: id });
+
+  loadTasks((tasks) => {
+    const updated = tasks.filter(t => t.id !== id);
+    saveTasks(updated, renderTasks);
   });
 }
 
@@ -186,18 +191,9 @@ function addTask() {
   const dueDate = document.getElementById("taskDue").value;
   const dueTime = document.getElementById("taskTime").value;
 
-  if (!title) {
-    alert("Please enter a task title.");
-    return;
-  }
-  if (!dueDate) {
-    alert("Please select a completion date.");
-    return;
-  }
-  if (!dueTime) {
-    alert("Please select a completion time.");
-    return;
-  }
+  if (!title) { alert("Please enter a task title."); return; }
+  if (!dueDate) { alert("Please select a completion date."); return; }
+  if (!dueTime) { alert("Please select a completion time."); return; }
 
   const completionDateTime = `${dueDate}T${dueTime}`;
 
@@ -213,11 +209,7 @@ function addTask() {
   loadTasks((tasks) => {
     tasks.push(newTask);
     saveTasks(tasks, () => {
-      // Try to schedule alarm
-      chrome.runtime.sendMessage({ type: "SCHEDULE_TASK_ALARM", task: newTask }, (response) => {
-        if (response && !response.scheduled) {
-          // Time already passed — task is immediately Due, no alarm needed
-        }
+      chrome.runtime.sendMessage({ type: "SCHEDULE_TASK_ALARM", task: newTask }, () => {
         document.getElementById("taskTitle").value = "";
         document.getElementById("taskDesc").value = "";
         document.getElementById("taskDue").value = "";
